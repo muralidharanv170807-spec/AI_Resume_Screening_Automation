@@ -40,33 +40,27 @@ An AI-powered recruitment automation system that automates the resume screening 
 
 ---
 
-## 📷 Workflow
-
-![Workflow](screenshots/workflow.png)
-
----
-
-## 📄 Sample Resume
-
-![Sample Resume](screenshots/sample-resume.png)
-
----
-
-## 📑 Resume Extraction
-
-![Resume Extraction](screenshots/resume-extraction-output.png)
-
----
-
 ## 🤖 AI Analysis
 
-![AI Analysis](screenshots/ai-analysis-output.png)
+![AI Analysis](screenshots/ai-analysis.png.png)
 
 ---
 
 ## 📊 Google Sheets Output
 
-![Google Sheets Output](screenshots/google-sheets-output.png)
+![Google Sheets Output](screenshots/google-sheets-output.png.png)
+
+---
+
+## 📧 Email Notification
+
+![Email Notification](screenshots/email-notification.png.png)
+
+---
+
+## ✅ Workflow Success
+
+![Workflow Success](screenshots/workflow-success.png.png)
 
 ---
 
@@ -74,6 +68,6 @@ An AI-powered recruitment automation system that automates the resume screening 
 
 **Muralidharan V**
 
-B.Tech – Artificial Intelligence & Data Science
+**B.Tech – Artificial Intelligence & Data Science**
 
 GitHub: https://github.com/muralidharanv170807-spec
