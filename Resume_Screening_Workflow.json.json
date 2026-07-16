@@ -1,0 +1,638 @@
+{
+  "name": "resume",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyHour",
+              "minute": 30
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {
+          "downloadAttachments": true
+        }
+      },
+      "id": "32673cfe-e2eb-4562-866d-eb5cca9e16bd",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        -48
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "sTIP7LTQid7C8yAP",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "attachment_0",
+        "options": {}
+      },
+      "id": "32cd9c66-ec11-4a59-af2b-bd780c9131a3",
+      "name": "Extract PDF Text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an ATS Resume Screening Assistant.\n\nRead the resume text provided below.\n\nExtract the following information exactly as it appears in the resume:\n- Name\n- Email\n- Phone Number\n- LinkedIn\n- Education\n- Experience\n- Skills\n- Projects\n- Certifications\n\nRequired Skills:\n- Python\n- SQL\n- Machine Learning\n- Data Analysis\n- Power BI\n\nInstructions:\n1. Compare the candidate's skills with the required skills.\n2. List the matching skills in \"skillsFound\".\n3. List the missing required skills in \"missingSkills\".\n4. Calculate a score out of 100.\n5. If the score is 70 or above, set recommendation to \"Selected\".\n6. If the score is below 70, set recommendation to \"Rejected\".\n7. If a field is not available in the resume, return an empty string \"\" or an empty array [].\n8. Return ONLY valid JSON. Do not include explanations, markdown, or extra text.\n\nReturn the result in this format:\n\n{\n  \"name\": \"\",\n  \"email\": \"\",\n  \"phone\": \"\",\n  \"linkedin\": \"\",\n  \"education\": [],\n  \"experience\": [],\n  \"certifications\": [],\n  \"projects\": [],\n  \"skillsFound\": [],\n  \"missingSkills\": [],\n  \"score\": 0,\n  \"recommendation\": \"\"\n}\n\nResume:\n\n{{$json.text}}",
+        "batching": {}
+      },
+      "id": "1feaedcb-12f4-4fc4-93a5-37b26a36e6c9",
+      "name": "Basic LLM Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        448,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "id": "4b34c9ee-e253-47b0-9a42-aca57c56fbc3",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        528,
+        176
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "r08mcSf4fD7GvBqQ",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const raw = $input.item.json.text;\n\nconst clean = raw\n  .replace(/^```json\\s*/i, \"\")\n  .replace(/^json\\s*/i, \"\")\n  .replace(/```$/i, \"\")\n  .trim();\n\nconst data = JSON.parse(clean);\n\nreturn {\n  json: {\n    name: data.name || \"\",\n    email: data.email || \"\",\n    phone: data.phone || \"\",\n    linkedin: data.linkedin || \"\",\n\n    education: data.education || [],\n    experience: data.experience || [],\n    certifications: data.certifications || [],\n    projects: data.projects || [],\n\n    skillsFound: data.skillsFound || [],\n    missingSkills: data.missingSkills || [],\n    score: data.score || 0,\n    recommendation: data.recommendation || \"\"\n  }\n};"
+      },
+      "id": "e830307b-33a2-485c-9e67-772112d9776e",
+      "name": "Parse JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        -48
+      ],
+      "alwaysOutputData": false,
+      "executeOnce": false,
+      "retryOnFail": false
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "6e78ce9f-fdc6-4bf1-bdeb-3524bed6f6b0",
+              "leftValue": "={{$json.recommendation}}",
+              "rightValue": "Selected",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d27a9f3a-8fe8-4034-8884-80e15f4ef415",
+      "name": "Check Recommendation",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1008,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "108OppEOoGumJwdUvLRm2T01pHyVGYpcH1Wjz4X3Fd7M",
+          "mode": "list",
+          "cachedResultName": "Resume Screeing Result",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/108OppEOoGumJwdUvLRm2T01pHyVGYpcH1Wjz4X3Fd7M/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/108OppEOoGumJwdUvLRm2T01pHyVGYpcH1Wjz4X3Fd7M/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email": "={{ $json.email }}",
+            "Phone": "={{ $json.phone }}",
+            "LinkedIn": "={{ $json.linkedin }}",
+            "Skills Found": "={{ $json.skillsFound.join(\", \") }}",
+            "Missing Skills": "={{ $json.missingSkills.join(\", \") }}",
+            "Score": "={{ $json.score }}",
+            "Recommendation": "={{ $json.recommendation }}",
+            "Name": "={{ $json.name }}",
+            "Education": "={{ $json.education }}",
+            "Experience": "={{ $json.experience }}",
+            "Certifications": "={{ $json.certifications }}",
+            "Project": "={{ $json.projects }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "LinkedIn",
+              "displayName": "LinkedIn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Skills Found",
+              "displayName": "Skills Found",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Missing Skills",
+              "displayName": "Missing Skills",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Score",
+              "displayName": "Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Recommendation",
+              "displayName": "Recommendation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Education",
+              "displayName": "Education",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Experience",
+              "displayName": "Experience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Certifications",
+              "displayName": "Certifications",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Project",
+              "displayName": "Project",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "23e0a392-7f0a-4d1d-99d3-b521e86cfbe6",
+      "name": "Append row in sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1264,
+        -176
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "E9pxOoDMiUrNsMbZ",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "murali17082007@gmail.com",
+        "subject": "Congratulations! You Have Been Selected for the Technical Youth Trainer Position",
+        "message": "=<!DOCTYPE html>\n<html>\n<head>\n    <meta charset=\"UTF-8\">\n    <title>Congratulations! You Have Been Selected</title>\n</head>\n<body style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333333;\">\n\n    <p>Dear <strong>{{$node[\"Parse JSON\"].json.name}}</strong>,</p>\n\n    <p>Greetings!</p>\n\n    <p>\n        Thank you for submitting your resume for the <strong>AI Developer</strong> position.\n    </p>\n\n    <p>\n        We are pleased to inform you that, based on our resume screening process, your profile has been selected for the next stage of the recruitment process.\n    </p>\n\n    <p>\n        Your skills, qualifications, and experience closely match our requirements, and we are excited to move forward with your application.\n    </p>\n\n    <p>\n        Our HR team will contact you shortly with further details regarding the interview schedule and the next steps.\n    </p>\n\n    <p>\n        Please reply to this email to confirm that you have received this notification.\n    </p>\n\n    <p>\n        We look forward to having you as part of our organization.\n    </p>\n\n    <p>\n        Best Regards,<br>\n        HR Team<br>\n        ABC Technologies Pvt. Ltd.\n    </p>\n\n</body>\n</html>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "4efc5ac2-a328-4885-9b10-0cbaeebfb56a",
+      "name": "Send Interview Invitation",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1536,
+        -256
+      ],
+      "webhookId": "d56968f6-53b8-4353-b18b-3a456a8d405d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "sTIP7LTQid7C8yAP",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "108OppEOoGumJwdUvLRm2T01pHyVGYpcH1Wjz4X3Fd7M",
+          "mode": "list",
+          "cachedResultName": "Resume Screeing Result",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/108OppEOoGumJwdUvLRm2T01pHyVGYpcH1Wjz4X3Fd7M/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/108OppEOoGumJwdUvLRm2T01pHyVGYpcH1Wjz4X3Fd7M/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $json.name }}",
+            "Email": "={{ $json.email }}",
+            "Phone": "={{ $json.phone }}",
+            "LinkedIn": "={{ $json.linkedin }}",
+            "Skills Found": "={{ $json.skillsFound.join(\", \") }}",
+            "Missing Skills": "={{ $json.missingSkills.join(\", \") }}",
+            "Score": "={{ $json.score }}",
+            "Recommendation": "={{ $json.recommendation }}",
+            "Education": "={{ $json.education }}",
+            "Experience": "={{ $json.experience }}",
+            "Certifications": "={{ $json.certifications }}",
+            "Project": "={{ $json.projects }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "LinkedIn",
+              "displayName": "LinkedIn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Skills Found",
+              "displayName": "Skills Found",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Missing Skills",
+              "displayName": "Missing Skills",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Score",
+              "displayName": "Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recommendation",
+              "displayName": "Recommendation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Education",
+              "displayName": "Education",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Experience",
+              "displayName": "Experience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Certifications",
+              "displayName": "Certifications",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Project",
+              "displayName": "Project",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "3963d143-de00-4bd5-81da-27197f550bb6",
+      "name": "Append Rejected to Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1264,
+        80
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "E9pxOoDMiUrNsMbZ",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "=murali17082007@gmail.com",
+        "subject": "Update on Your AI Developer",
+        "message": "=<!DOCTYPE html>\n<html>\n<head>\n    <meta charset=\"UTF-8\">\n    <title>Application Status Update</title>\n</head>\n<body style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333333;\">\n\n    <p>Dear <strong>{{$node[\"Parse JSON\"].json.name}}</strong>,</p>\n\n    <p>Greetings!</p>\n\n    <p>\n        Thank you for taking the time to apply for the <strong>AI Developer</strong> position and for sharing your resume with us.\n    </p>\n\n    <p>\n        After carefully reviewing your profile, we regret to inform you that your application has not been selected for the next stage of the recruitment process at this time.\n    </p>\n\n    <p>\n        This decision does not reflect your overall potential. We encourage you to continue developing your skills and applying for future opportunities that match your experience and qualifications.\n    </p>\n\n    <p>\n        We sincerely appreciate your interest in our organization and wish you every success in your career.\n    </p>\n\n    <p>\n        Thank you once again for your time and effort.\n    </p>\n\n    <p>\n        Best Regards,<br>\n        HR Team<br>\n        ABC Technologies Pvt. Ltd.\n    </p>\n\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "382e51c7-d345-47b1-9961-43f72d87f2bb",
+      "name": "Send Rejection Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1536,
+        192
+      ],
+      "webhookId": "5c40af09-db26-4fe2-b923-7b61eb6ce1de",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "sTIP7LTQid7C8yAP",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract PDF Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract PDF Text": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON": {
+      "main": [
+        [
+          {
+            "node": "Check Recommendation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Recommendation": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append Rejected to Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Send Interview Invitation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Rejected to Sheet": {
+      "main": [
+        [
+          {
+            "node": "Send Rejection Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "95fb8270-f546-42e8-ace1-5a24136038a3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c60c0816a6410535217d147e78a9ea1fe65c949ee4d25860ad91166123c1f8fa"
+  },
+  "nodeGroups": [],
+  "id": "SH4lFwC3ugKTqpXq",
+  "tags": []
+}
